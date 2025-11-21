@@ -31,5 +31,8 @@ Contributors names and contact info
 ex. Gerd Grimmen (F.KU)
 
 ## Version History
-* 0.1
+* 0.2.0
+    * added index.html
+    * added endpoint /worst
+* 0.1.0
     * Nothing here to see
