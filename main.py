@@ -66,14 +66,17 @@ def index(_):
     return { 
         "name": "Rest API for simple note taking",
         "summary": "",
-        "endpoints": [ "/session" "/help" ],
-        "version": "0.1.0"
+        "endpoints": [ "/session", "worst", "/help" ],
+        "version": "0.2.0"
     }
 
 @api.get("/help")
 def get_help(args):
     return {"help": "help"}
 
+@api.get("/worst")
+def get_worse(args):
+    return index_content
 
 @api.get("/session")
 def get_image(args):
