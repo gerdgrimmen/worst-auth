@@ -31,6 +31,8 @@ Contributors names and contact info
 ex. Gerd Grimmen (F.KU)
 
 ## Version History
+* 0.3.0
+    * added DELETE endpoint for session
 * 0.2.0
     * added index.html
     * added endpoint /worst

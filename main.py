@@ -66,8 +66,8 @@ def index(_):
     return { 
         "name": "Rest API for simple note taking",
         "summary": "",
-        "endpoints": [ "/session", "worst", "/help" ],
-        "version": "0.2.0"
+        "endpoints": [ "/session", "/worst", "/help" ],
+        "version": "0.3.0"
     }
 
 @api.get("/help")
@@ -102,6 +102,17 @@ def post_file(body):
     api_data["session"][str(next_id)] = uploaded_file_name
     write_data()
     return {"id": str(next_id)}
+
+@api.delete("/session")
+def delete_note(body):
+    if not "id" in body.keys():
+        return {"message": "invalid am entry"}
+    if int(body["id"]) in api_data["session"].keys():
+        api_data["session"].pop(int(body["id"]))
+        print("deleting")
+        write_data()
+        return {"message": "deleted"}
+    return {"message": "not found"}
 
 if __name__ == "__main__":
     class ApiRequestHandler(BaseHTTPRequestHandler):
