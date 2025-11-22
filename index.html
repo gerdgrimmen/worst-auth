@@ -36,9 +36,12 @@ body {background-color: powderblue;}
             
             var address_login = home_address+":"+port+"/session"
 
+            session_id = null;
+
             var login_name_input = document.getElementById("login_name_input");
             var login_password_input = document.getElementById("login_password_input");
             var login_button = document.getElementById("login_button");
+            var logout_button = document.getElementById("logout_button");
             var output = document.getElementById("output");
           
             function reset_output(){
@@ -66,8 +69,19 @@ body {background-color: powderblue;}
                 });
             };
 
-            login_button.addEventListener("click", login);
+            async function logout(){
+                // delete
+                // var post_body = {"login": {"name": login_name_input.value, "password": login_password_input.value}};
+                // fetch(address_login, {method: "DELETE", headers: worst_headers, body: JSON.stringify(post_body) })
+                // .then(function(response) {
+                //     return response.json();
+                // }).then(function(){
+                //     update_output();
+                // });
+            };
 
+            login_button.addEventListener("click", login);
+            logout_button.addEventListener("click", logout);
             update_output();
         </script>
     </html>
