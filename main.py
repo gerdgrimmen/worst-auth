@@ -123,6 +123,8 @@ if __name__ == "__main__":
                 try:
                     result = api.routing[method][path](args)
                     self.send_response(200)
+                    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie
+                    self.send_header("Set-Cookie", "asd=123; HttpOnly; SameSite=Strict;") # add Secure for https version
                     self.end_headers()
                     if type(result) is dict:
                         self.wfile.write(json.dumps(result, indent=4).encode())
