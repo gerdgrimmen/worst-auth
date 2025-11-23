@@ -32,8 +32,30 @@ def initial_persistence_setup():
             return json.loads(data_file.read())
     else:
         write_data()
-        return {"session": {}}        
+        return {"session": {}, "access-tokens": {}, "refresh-tokens":{}}        
 
+
+def create_uuid():
+    return str(uuid.uuid4())
+
+def is_valid_access_token(access_token):
+    if access_token in api_data["access-token"]:
+        return True
+    return False
+
+def is_valid_refresh_token(refresh_token):
+    if refresh_token in api_data["refresh-token"]:
+        return True
+    return False
+
+def delete_access_token(access_token):
+    if access_token in api_data["access-token"]:
+        pass # delete access token
+
+def delete_refresh_token(refresh_token):
+    if refresh_token in api_data["refresh-token"]:
+        pass # delete refresh token
+    
 class API():
     def __init__(self):
         self.routing = { "GET": { }, "POST": { } , "PUT": { } , "DELETE": { } }
