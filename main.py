@@ -6,7 +6,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 api_data = {
-    "session": {}
+    "session": {}, "access-tokens": {}, "refresh-tokens":{}, "users": {}
 }
 
 filename = "api_data.json"
@@ -32,7 +32,7 @@ def initial_persistence_setup():
             return json.loads(data_file.read())
     else:
         write_data()
-        return {"session": {}, "access-tokens": {}, "refresh-tokens":{}}        
+        return {"session": {}, "access-tokens": {}, "refresh-tokens":{}, "users": {}}        
 
 
 def create_uuid():
@@ -116,11 +116,9 @@ def get_image(args):
 
 @api.post("/session")
 def post_file(body):
+    print(body)
     next_id = str(uuid.uuid4())
     uploaded_file_name = str(next_id) + ".png"
-    with open(uploaded_file_name, "wb") as uploaded_file:
-        newFileByteArray = bytearray(body)
-        uploaded_file.write(newFileByteArray)
     api_data["session"][str(next_id)] = uploaded_file_name
     write_data()
     return {"id": str(next_id)}
@@ -146,7 +144,10 @@ if __name__ == "__main__":
                     result = api.routing[method][path](args)
                     self.send_response(200)
                     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie
-                    self.send_header("Set-Cookie", "asd=123; HttpOnly; SameSite=Strict;") # add Secure for https version
+                    acccess_token = create_uuid()
+                    refresh_token = create_uuid()
+                    self.send_header("Set-Cookie", f"access_token={acccess_token}; HttpOnly; SameSite=Strict;") # add Secure for https version
+                    self.send_header("Set-Cookie", f"refresh_token={refresh_token}; HttpOnly; SameSite=Strict;") # add Secure for https version
                     self.end_headers()
                     if type(result) is dict:
                         self.wfile.write(json.dumps(result, indent=4).encode())
@@ -224,6 +225,7 @@ if __name__ == "__main__":
 
     api_data = initial_persistence_setup()
     index_content = load_index()
+    api_data["users"] = {"admin": "admin"}
     httpd = HTTPServer(('', PORT), ApiRequestHandler)
     print(f"Application started at http://127.0.0.1:{PORT}/")
     httpd.serve_forever()
