@@ -22,6 +22,8 @@ body {background-color: powderblue;}
             <input type="text" name="login_password" size="40" id="login_password_input"/>
             <!-- button login_button-->
             <input type="button" value="Login" id="login_button"/>
+            <!-- button logout_button-->
+            <input type="button" value="Logout" id="logout_button"/>
         </div>
 
         <!-- output message -->
@@ -34,7 +36,8 @@ body {background-color: powderblue;}
             const worst_headers = new Headers();
             worst_headers.append("Content-Type", "application/json");
             
-            var address_login = home_address+":"+port+"/session"
+            var address_login = home_address+":"+port+"/auth/login"
+            var address_logout = home_address+":"+port+"/auth/logout"
 
             session_id = null;
 
@@ -48,13 +51,11 @@ body {background-color: powderblue;}
                 output.innerText = "";
             };
   
-            async function update_output(){
-                // get
-                fetch(address_tags)
-                .then(function(response) {
-                    return response.json();
-                }).then(function(data) {
-                    console.log(data);
+            async function update_output(in_ouput){
+                reset_output();
+                output.innerText = in_ouput;
+                Object.keys(in_ouput).forEach(function(key) {
+                    console.log(key + ": " + in_ouput[key]);
                 });
             };
 
@@ -64,25 +65,24 @@ body {background-color: powderblue;}
                 fetch(address_login, {method: "POST", headers: worst_headers, body: JSON.stringify(post_body) })
                 .then(function(response) {
                     return response.json();
-                }).then(function(){
-                    update_output();
+                }).then(function(e){
+                    update_output(e);
                 });
             };
 
             async function logout(){
-                // delete
-                // var post_body = {"login": {"name": login_name_input.value, "password": login_password_input.value}};
-                // fetch(address_login, {method: "DELETE", headers: worst_headers, body: JSON.stringify(post_body) })
-                // .then(function(response) {
-                //     return response.json();
-                // }).then(function(){
-                //     update_output();
-                // });
+                // post
+                var post_body = {"logout": {}};
+                fetch(address_logout, {method: "POST", headers: worst_headers, body: JSON.stringify(post_body) })
+                .then(function(response) {
+                    return response.json();
+                }).then(function(e){
+                    update_output(e);
+                });
             };
 
             login_button.addEventListener("click", login);
             logout_button.addEventListener("click", logout);
-            update_output();
         </script>
     </html>
 </body>
