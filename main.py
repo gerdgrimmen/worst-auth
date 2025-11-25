@@ -26,7 +26,6 @@ def load_index():
             return index_file.read()
     return index_content
 
-
 def initial_persistence_setup():
     if os.path.isfile(filename):
         with open(filename, "r") as data_file:
@@ -64,88 +63,126 @@ class API():
 
 api = API()
 
-
 @api.get("/")
 def index(_):
-    return {
-        "name": "Rest API for simple note taking",
+    return (False, {
+        "name": "Rest API for auth",
         "summary": "",
         "endpoints": [ "/session", "/worst", "/help" ],
         "version": "0.3.0"
-    }
+    })
 
 @api.get("/help")
 def get_help(args):
-    return {"help": "help"}
+    return (False, {"help": "help"})
 
 @api.get("/worst")
 def get_worse(args):
-    return index_content
+    return (False, index_content)
 
-@api.post("/")
-def post_file(body):
-    next_id = str(uuid.uuid4())
-    uploaded_file_name = str(next_id) + ".png"
-    api_data["session"][str(next_id)] = uploaded_file_name
+@api.get("/worst/<id>")
+def get_worse(args, id):
+    return (False, "index_content")
+
+@api.post("/auth/login")
+def auth_login(body):
+    print(body)
+    login_data = body["login"]
+    print("name: ", login_data["name"])
+    print("password: ", login_data["password"])
+    if login_data["name"] in api_data["users"].keys():
+        print("login exists")
+        if api_data["users"][login_data["name"]] == login_data["password"]:
+            print("password is correct")
+            return (True, {"message": "you successfully logged in"})
     write_data()
-    return {"id": str(next_id)}
+    # return 401
+    return (False,{"id": str(0)})
+
+@api.post("/auth/logout")
+def auth_logout(body):
+    next_id = str(uuid.uuid4())
+    api_data[""][str(next_id)] = uploaded_file_name
+    write_data()
+    return (False, {"id": str(next_id)})
 
 
 if __name__ == "__main__":
     class ApiRequestHandler(BaseHTTPRequestHandler):
         global api
 
-        def call_api(self, method, path, args):
-            if path in api.routing[method]:
-                try:
-                    result = api.routing[method][path](args)
-                    self.send_response(200)
-                    self.end_headers()
-                    if type(result) is dict:
-                        self.wfile.write(json.dumps(result, indent=4).encode())
-                    elif type(result) is str:
-                        self.wfile.write(result.encode())
-                    elif type(result) is bytes:
-                        self.wfile.write(result)
-
-                except Exception as e:
-                    self.send_response(500, "Server Error")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({ "error": e.args }, indent=4).encode())
-            else:
-                self.send_response(404, "Not Found")
+        def call_api(self, method, path, args, in_id=None):
+            # is_session_valid
+            # if not self.is_authorized(path):
+            #      return_401()
+            #      return
+            try:
+                create_cookies, response = api.routing[method][path](args) if in_id == None else api.routing[method][path](args, in_id)
+                self.send_response(200)
+                if create_cookies:
+                    self.send_header("Set-Cookie", f"access_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
+                    self.send_header("Set-Cookie", f"refresh_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "not found"}, indent=4).encode())
+
+                if type(response) is dict:
+                    self.wfile.write(json.dumps(response, indent=4).encode())
+                elif type(response) is str:
+                    self.wfile.write(response.encode())
+
+            except Exception as e:
+                self.send_response(500, "Server Error")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": e.args }, indent=4).encode())
+
+        def is_session_valid(self):
+            return False
+
+        def is_authorized(self, in_path):
+            return True
+
+        def return_404(self):
+            self.send_response(404, "Not Found")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "not found"}, indent=4).encode())
+        
+        def return_401(self):
+            self.send_response(401, "Not Authorized")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "not found"}, indent=4).encode())
+        
+        def return_400(self):
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "posted data must be in json format"}, indent=4).encode())
 
         def do_GET(self):
             parsed_url = urlparse(self.path)
             path = parsed_url.path
             args = parse_qs(parsed_url.query)
-            if not path in api.routing["GET"]:
+            if path in api.routing["GET"]: 
+                self.call_api("GET", path, args)
+                return
+            else:
                 new_path, path_id = path.rsplit("/",1)
-                print(new_path, " ", path_id)
-                if new_path == "": new_path = "/"
-                if new_path in api.routing["GET"]:
-                    path = new_path
+                if new_path+"/<id>" in api.routing["GET"]:
                     args["path_id"] = path_id
-            for k in args.keys():
-                if len(args[k]) == 1:
-                    args[k] = args[k][0]
-            self.call_api("GET", path, args)
+                    self.call_api("GET", new_path+"/<id>", args, path_id)
+                    return
+            self.return_404()
 
         def do_POST(self):
             parsed_url = urlparse(self.path)
             path = parsed_url.path
             if self.headers.get("content-type") != "application/json":
-                self.send_response(400)
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    "error": "posted data must be in json format"
-                }, indent=4).encode())
+                self.return_400()
             else:
                 data_len = int(self.headers.get("content-length"))
                 data = self.rfile.read(data_len).decode()
-                self.call_api("POST", path, json.loads(data))
+                if path in api.routing["POST"]:
+                    self.call_api("POST", path, json.loads(data))
+                    return
+            self.return_404()
+            
 
     api_data = initial_persistence_setup()
     index_content = load_index()

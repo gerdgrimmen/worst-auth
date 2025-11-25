@@ -36,7 +36,8 @@ body {background-color: powderblue;}
             const worst_headers = new Headers();
             worst_headers.append("Content-Type", "application/json");
             
-            var address_login = home_address+":"+port+"/session"
+            var address_login = home_address+":"+port+"/auth/login"
+            var address_logout = home_address+":"+port+"/auth/logout"
 
             session_id = null;
 
