@@ -1,5 +1,4 @@
 import uuid
-
 import json
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -37,6 +36,10 @@ def initial_persistence_setup():
 def create_uuid():
     return str(uuid.uuid4())
 
+def is_valid_access_token(token, username):
+    if token in api_data["access_tokens"].keys():
+        api_data["access_tokens"]
+
 class API():
     def __init__(self):
         self.routing = { "GET": { }, "POST": { } , "PUT": { } , "DELETE": { } }
@@ -69,7 +72,7 @@ def index(_):
         "name": "Rest API for auth",
         "summary": "",
         "endpoints": [ "/session", "/worst", "/help" ],
-        "version": "0.3.0"
+        "version": "0.4.0"
     })
 
 @api.get("/help")
@@ -82,11 +85,11 @@ def get_worse(args):
 
 @api.get("/worst/<id>")
 def get_worse(args, id):
+    # args["/<id>"]
     return ({}, "index_content")
 
 @api.post("/auth/login")
 def auth_login(body):
-    print(body)
     login_data = body["login"]
     print("name: ", login_data["name"])
     print("password: ", login_data["password"])
@@ -95,52 +98,54 @@ def auth_login(body):
         if api_data["users"][login_data["name"]] == login_data["password"]:
             print("password is correct")
             return ({"set_access_token": login_data["name"], "set_refresh_token": login_data["name"]}, {"message": "you successfully logged in"})
-    write_data()
     # return 401
-    return ({},{"id": str(0)})
+    return ({},{"message": "Unauthorized"})
 
 @api.post("/auth/logout")
 def auth_logout(body):
-    next_id = str(uuid.uuid4())
-    api_data[""][str(next_id)] = uploaded_file_name
-    write_data()
-    return ({}, {"id": str(next_id)})
-
+    if not "access_token" in body.keys():
+        return ({"void_access_token": None, "void_refresh_token": None}, {"message": "you successfully logged out"})
+    access_token = body["access_token"]
+    refresh_token = body["refresh_token"]
+    return ({"void_access_token": access_token, "void_refresh_token": refresh_token}, {"message": "you successfully logged out"})
 
 if __name__ == "__main__":
     class ApiRequestHandler(BaseHTTPRequestHandler):
         global api
+        global api_data
+
         def run_commands(self, commands):
             if commands == []:
                 return
             for command in commands.keys():
                 match(command):
-                    "set_access_token": 
+                    case "set_access_token": 
                         access_token = create_uuid()
                         api_data["access_tokens"] = {access_token: commands[command]}
                         self.send_header("Set-Cookie", f"access_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
-                    "set_refresh_token": 
+                    case "set_refresh_token": 
                         refresh_token = create_uuid()
                         api_data["refresh_tokens"] = {refresh_token: commands[command]}
                         self.send_header("Set-Cookie", f"refresh_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
-                    "void_access_token": 
+                    case "void_access_token": 
                         if commands[command] in api_data["access_tokens"].keys(): api_data["access_tokens"].pop(commands[command])
                         self.send_header("Set-Cookie", f"access_token=; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;  Max-Age=0;") # add Secure for https version
-                    "void_refresh_token": 
+                    case "void_refresh_token": 
                         if commands[command] in api_data["refresh_tokens"].keys(): api_data["refresh_tokens"].pop(commands[command])
                         self.send_header("Set-Cookie", f"refresh_token=; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;  Max-Age=0;") # add Secure for https version
         
         def call_api(self, method, path, args, in_id=None):
             cookie_headers = self.headers.get("Cookie")
             if cookie_headers:
-                print("we've got cookies")
                 print(cookie_headers)
-                args["access_token"] =cookie_headers["access_token"]
-                args["refresh_token"] =cookie_headers["refresh_token"]
+                cookies = SimpleCookie()
+                cookies.load(cookie_headers)
+                args["access_token"] = cookies["access_token"].value
+                args["refresh_token"] = cookies["refresh_token"].value
             try:
                 commands_dict, response = api.routing[method][path](args) if in_id == None else api.routing[method][path](args, in_id)
                 self.send_response(200)
-                run_commands(commands_dict)
+                self.run_commands(commands_dict)
                 self.end_headers()
 
                 if type(response) is dict:
@@ -152,6 +157,7 @@ if __name__ == "__main__":
                 self.send_response(500, "Server Error")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": e.args }, indent=4).encode())
+            print("wtf")
 
         def return_404(self):
             self.send_response(404, "Not Found")
@@ -178,7 +184,7 @@ if __name__ == "__main__":
             else:
                 new_path, path_id = path.rsplit("/",1)
                 if new_path+"/<id>" in api.routing["GET"]:
-                    args["path_id"] = path_id
+                    args["/<id>"] = path_id
                     self.call_api("GET", new_path+"/<id>", args, path_id)
                     return
             self.return_404()
@@ -188,6 +194,7 @@ if __name__ == "__main__":
             path = parsed_url.path
             if self.headers.get("content-type") != "application/json":
                 self.return_400()
+                return
             else:
                 data_len = int(self.headers.get("content-length"))
                 data = self.rfile.read(data_len).decode()
