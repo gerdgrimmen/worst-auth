@@ -5,6 +5,16 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from http.cookies import SimpleCookie
 
+from valkey import Valkey
+
+valkeyhost = os.environ["VALKEYHOST"] if "VALKEYHOST" in os.environ.keys() else "localhost" 
+if "VALKEYHOST" in os.environ.keys():
+    print(valkeyhost)
+else:
+    print(valkeyhost)  
+
+r = Valkey(host=valkeyhost, port=6379, db=0)
+
 api_data = {
     "access-tokens": {}, "refresh-tokens":{}, "users": {}
 }
