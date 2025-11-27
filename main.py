@@ -67,8 +67,8 @@ def index(_):
     return ({}, {
         "name": "Rest API for auth",
         "summary": "",
-        "endpoints": [ "/session", "/worst", "/help" ],
-        "version": "0.4.0"
+        "endpoints": [ "/login", "/logout", "/worst", "/help" ],
+        "version": "0.5.0"
     })
 
 @api.get("/help")
@@ -120,18 +120,20 @@ if __name__ == "__main__":
                         access_token = create_uuid()
                         api_data["access_tokens"] = {access_token: commands[command]}
                         r.set(access_token, commands[command])
-                        self.send_header("Set-Cookie", f"access_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
+                        self.send_header("Set-Cookie", f"access_token={access_token}; HttpOnly; SameSite=Strict;") # add Secure for https version
                     case "set_refresh_token": 
                         refresh_token = create_uuid()
                         api_data["refresh_tokens"] = {refresh_token: commands[command]}
                         r.set(refresh_token, commands[command])
-                        self.send_header("Set-Cookie", f"refresh_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
+                        self.send_header("Set-Cookie", f"refresh_token={refresh_token}; HttpOnly; SameSite=Strict;") # add Secure for https version
                     case "void_access_token": 
                         if commands[command] in api_data["access_tokens"].keys(): api_data["access_tokens"].pop(commands[command])
+                        print("deleting: ", commands[command])
                         r.delete(commands[command])
                         self.send_header("Set-Cookie", f"access_token=; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;  Max-Age=0;") # add Secure for https version
                     case "void_refresh_token": 
                         if commands[command] in api_data["refresh_tokens"].keys(): api_data["refresh_tokens"].pop(commands[command])
+                        print("deleting: ", commands[command])
                         r.delete(commands[command])
                         self.send_header("Set-Cookie", f"refresh_token=; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;  Max-Age=0;") # add Secure for https version
         
