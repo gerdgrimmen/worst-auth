@@ -5,33 +5,29 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from http.cookies import SimpleCookie
 
+from valkey import Valkey
+
+valkeyhost = os.environ["VALKEYHOST"] if "VALKEYHOST" in os.environ.keys() else "localhost" 
+if "VALKEYHOST" in os.environ.keys():
+    print(valkeyhost)
+else:
+    print(valkeyhost)  
+
+r = Valkey(host=valkeyhost, port=6379, db=0)
+
 api_data = {
     "access-tokens": {}, "refresh-tokens":{}, "users": {}
 }
 
-filename = "api_data.json"
-
 index_content = "Nothing Here!"
 
 PORT = 5020
-
-def write_data():
-    with open(filename, "w") as data_file:
-        data_file.write(json.dumps(api_data))
 
 def load_index():
     if os.path.isfile("index.html"):
         with open("index.html", "r") as index_file:
             return index_file.read()
     return index_content
-
-def initial_persistence_setup():
-    if os.path.isfile(filename):
-        with open(filename, "r") as data_file:
-            return json.loads(data_file.read())
-    else:
-        write_data()
-        return {"access-tokens": {}, "refresh-tokens":{}, "users": {}}
 
 def create_uuid():
     return str(uuid.uuid4())
@@ -71,8 +67,8 @@ def index(_):
     return ({}, {
         "name": "Rest API for auth",
         "summary": "",
-        "endpoints": [ "/session", "/worst", "/help" ],
-        "version": "0.4.0"
+        "endpoints": [ "/login", "/logout", "/worst", "/help" ],
+        "version": "0.5.0"
     })
 
 @api.get("/help")
@@ -113,6 +109,7 @@ if __name__ == "__main__":
     class ApiRequestHandler(BaseHTTPRequestHandler):
         global api
         global api_data
+        global r
 
         def run_commands(self, commands):
             if commands == []:
@@ -122,16 +119,22 @@ if __name__ == "__main__":
                     case "set_access_token": 
                         access_token = create_uuid()
                         api_data["access_tokens"] = {access_token: commands[command]}
-                        self.send_header("Set-Cookie", f"access_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
+                        r.set(access_token, commands[command])
+                        self.send_header("Set-Cookie", f"access_token={access_token}; HttpOnly; SameSite=Strict;") # add Secure for https version
                     case "set_refresh_token": 
                         refresh_token = create_uuid()
                         api_data["refresh_tokens"] = {refresh_token: commands[command]}
-                        self.send_header("Set-Cookie", f"refresh_token={create_uuid()}; HttpOnly; SameSite=Strict;") # add Secure for https version
+                        r.set(refresh_token, commands[command])
+                        self.send_header("Set-Cookie", f"refresh_token={refresh_token}; HttpOnly; SameSite=Strict;") # add Secure for https version
                     case "void_access_token": 
                         if commands[command] in api_data["access_tokens"].keys(): api_data["access_tokens"].pop(commands[command])
+                        print("deleting: ", commands[command])
+                        r.delete(commands[command])
                         self.send_header("Set-Cookie", f"access_token=; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;  Max-Age=0;") # add Secure for https version
                     case "void_refresh_token": 
                         if commands[command] in api_data["refresh_tokens"].keys(): api_data["refresh_tokens"].pop(commands[command])
+                        print("deleting: ", commands[command])
+                        r.delete(commands[command])
                         self.send_header("Set-Cookie", f"refresh_token=; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;  Max-Age=0;") # add Secure for https version
         
         def call_api(self, method, path, args, in_id=None):
@@ -203,8 +206,6 @@ if __name__ == "__main__":
                     return
             self.return_404()
             
-
-    api_data = initial_persistence_setup()
     index_content = load_index()
     api_data["users"] = {"admin": "admin"}
     httpd = HTTPServer(('', PORT), ApiRequestHandler)

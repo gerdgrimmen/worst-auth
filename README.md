@@ -13,6 +13,16 @@ Minimal auth service
 * from urllib.parse import urlparse, parse_qs
 * from http.cookies import SimpleCookie
 
+* from valkey import Valkey
+
+You need to have a valkey service running. Recommended is to use a docker/podman container.
+
+Example Code for a podman container:
+
+```
+podman run -d -p 6379:6379 -it docker.io/valkey/valkey:latest
+```
+
 ### Installing
 
 * Downloading/Copying the script
@@ -26,6 +36,7 @@ python ./main.py
 ```
 To use the API just take the examples from the ./curls.sh.
 
+
 ## Authors
 
 Contributors names and contact info
@@ -33,6 +44,9 @@ Contributors names and contact info
 ex. Gerd Grimmen (F.KU)
 
 ## Version History
+* 0.5.0
+    * Valkey implementation
+    * removed writing to hard drive
 * 0.4.0
     * rewritten most of the service
     * added /login endpoint
