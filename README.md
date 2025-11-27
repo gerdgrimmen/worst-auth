@@ -12,7 +12,6 @@ Minimal auth service
 * from http.server import HTTPServer, BaseHTTPRequestHandler
 * from urllib.parse import urlparse, parse_qs
 * from http.cookies import SimpleCookie
-
 * from valkey import Valkey
 
 You need to have a valkey service running. Recommended is to use a docker/podman container.
