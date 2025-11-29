@@ -35,6 +35,21 @@ python ./main.py
 ```
 To use the API just take the examples from the ./curls.sh.
 
+### Building conainer image
+
+You need docker/podman or comparable software installed to build the container file yourself.
+
+```
+chmod +x container_build.sh
+./conainer_build.sh 
+```
+
+### Running conainer
+
+This is a podman example use your equivalent if you run a different software solution 
+```
+podman run -d --name worst-authy -p 5020:5020 worst/worst-auth:0.4.0
+```
 
 ## Authors
 
