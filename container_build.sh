@@ -1,0 +1,1 @@
+podman build -t worst/worst-auth:0.5.0 -f ./Dockerfile/Dockerfile --build-arg valkey=localhost  .
