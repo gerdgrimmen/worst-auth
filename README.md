@@ -48,7 +48,7 @@ chmod +x container_build.sh
 
 This is a podman example use your equivalent if you run a different software solution 
 ```
-podman run -d --name worst-authy -p 5020:5020 worst/worst-auth:0.4.0
+podman run -d --name worst-authy -p 5020:5020 worst/worst-auth:0.5.0
 ```
 
 ## Authors
